@@ -396,6 +396,16 @@ document.querySelectorAll('.nav-btn').forEach(b => {
   };
 });
 
+if ($('btn-calendar')) {
+  $('btn-calendar').onclick = () => {
+    if (!state.candle) return;
+    const start = new Date(state.candle).toISOString().replace(/-|:|\.\d+/g, "");
+    const end = new Date(new Date(state.candle).getTime() + 60 * 60000).toISOString().replace(/-|:|\.\d+/g, "");
+    const url = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('הדלקת נרות שבת - ' + currentCity.n)}&dates=${start}/${end}&details=${encodeURIComponent('שבת שלום!')}&sf=true&output=xml`;
+    window.open(url, '_blank');
+  };
+}
+
 if ($('btn-city-change')) $('btn-city-change').onclick = () => $('city-panel').style.display = 'block';
 if ($('close-city-panel')) $('close-city-panel').onclick = () => $('city-panel').style.display = 'none';
 if ($('city-search')) $('city-search').oninput = (e) => renderCityList(e.target.value);
