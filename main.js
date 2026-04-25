@@ -104,6 +104,7 @@ async function fetchShabbatTimes(city, customName = null) {
   const name = customName || city.n;
   if ($('loc-name')) $('loc-name').textContent = name;
   if ($('loc-sub')) $('loc-sub').textContent = city.c || 'ישראל';
+  renderCityList(''); // Ensure list is ready
 
   const cacheKey = `shabbat_v3_${city.geo || (city.lat + '_' + city.lng)}`;
   const cached = localStorage.getItem(cacheKey);
