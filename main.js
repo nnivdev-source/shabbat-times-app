@@ -1,6 +1,5 @@
 import './app.css';
 import { formatInTimeZone } from 'date-fns-tz';
-import { PARASHA_DATABASE } from './parasha_data.js';
 
 window.onerror = function(message, source, lineno, colno, error) {
   const el = document.getElementById('loading-overlay');
@@ -56,23 +55,33 @@ const CITIES = [
 const HMONTHS = { 'Nisan': 'ניסן', 'Iyyar': 'אייר', 'Sivan': 'סיון', 'Tamuz': 'תמוז', 'Av': 'אב', 'Elul': 'אלול', 'Tishrei': 'תשרי', 'Cheshvan': 'חשון', 'Kislev': 'כסלו', 'Tevet': 'טבת', 'Shvat': 'שבט', 'Adar': 'אדר', 'Adar I': 'אדר א׳', 'Adar II': 'אדר ב׳', 'Adar 1': 'אדר א׳', 'Adar 2': 'אדר ב׳' };
 const HDAY = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳', 'י״א', 'י״ב', 'י״ג', 'י״ד', 'ט״ו', 'ט״ז', 'י״ז', 'י״ח', 'י״ט', 'כ׳', 'כ״א', 'כ״ב', 'כ״ג', 'כ״ד', 'כ״ה', 'כ״ו', 'כ״ז', 'כ״ח', 'כ״ט', 'ל׳'];
 
+const PARASHA_DATABASE = {
+  'אחרימות': { p: 'וַיְדַבֵּר ה\' אֶל מֹשֶׁה אַחֲרֵי מוֹת שְׁנֵי בְּנֵי אַהֲרֹן.', pts: [
+    'השילוב בין התעלות למעשה: השילוב בין עבודת הקודש הפנימית לבין הבית והיומיום.',
+    'כוחה של תשובה: היכולת לתקן ולחזור להיטהר גם אחרי רגעים קשים.',
+    'יום הכיפורים: הכוח של סליחה וניקוי הלב מול הבורא.',
+    'אחריות וזהירות: מנהיגות דורשת ענווה וזהירות בקדושה.'
+  ]},
+  'קדושים': { p: 'קְדֹשִׁים תִּהְיוּ כִּי קָדוֹשׁ אֲנִי ה\' אֱלֹהֵיכֶם.', pts: [
+    'אהבת ישראל: "ואהבת לרעך כמוך" — הבסיס לכל הקדושה בחיים.',
+    'קדושה בתוך החיים: להפוך את העולם הגשמי למקום שבו שורה השכינה.',
+    'כבוד האדם: "לא תקלל חרש" — חובתנו לכבד כל אדם באשר הוא.',
+    'דירה בתחתונים: המטרה היא להוריד את האור הרוחני לתוך המעשים הכי פשוטים.'
+  ]}
+};
+
+const normalize = (s) => s.replace(/\s/g, '').replace(/[-–/]/g, '').replace('פרשת', '').trim();
+
 const getParashaData = (name) => {
   if (!name) return null;
-  const normalize = (s) => s.replace(/\s/g, '').replace(/[-–/]/g, '').replace('פרשת', '').trim();
   const searchParts = name.split(/[-–/]/).map(normalize);
-  
   let combinedPts = [];
   let pasuk = '';
   
-  const dbNormalized = {};
-  Object.keys(PARASHA_DATABASE).forEach(k => {
-    dbNormalized[normalize(k)] = PARASHA_DATABASE[k];
-  });
-
   searchParts.forEach((p, idx) => {
-    if (dbNormalized[p]) {
-      if (idx === 0) pasuk = dbNormalized[p].p;
-      combinedPts = combinedPts.concat(dbNormalized[p].pts);
+    if (PARASHA_DATABASE[p]) {
+      if (idx === 0) pasuk = PARASHA_DATABASE[p].p;
+      combinedPts = combinedPts.concat(PARASHA_DATABASE[p].pts);
     }
   });
 
@@ -108,7 +117,10 @@ const formatGregorianHebrew = (iso) => {
 
 const BLESSINGS = {
   candles: { title: 'ברכת הדלקת נרות', text: 'בָּרוּךְ אַתָּה אֲדֹנָי אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו וְצִוָּנוּ לְהַדְלִיק נֵר שֶׁל שַׁבָּת קֹדֶשׁ.' },
-  children: { title: 'ברכת הילדים', text: 'יְשִׂימְךָ אֱלֹהִים כְּאֶפְרַיִם וְכִמְנַשֶּׁה (לבן) / יְשִׂימֵךְ אֱלֹהִים כְּשָׂרָה רִבְקָה רָחֵל וְלֵאָה (לבת). יְבָרֶכְךָ ה\' וְיִשְׁמְרֶךָ, יָאֵר ה\' פָּנָיו אֵלֶיךָ וִיחֻנֶּךָ, יִשָּׂא ה\' פָּנָיו אֵלֶיךָ וְיָשֵׂם לְךָ שָׁלוֹם.' }
+  children: { title: 'ברכת הילדים', text: 'יְשִׂימְךָ אֱלֹהִים כְּאֶפְרַיִם וְכִמְנַשֶּׁה (לבן) / יְשִׂימֵךְ אֱלֹהִים כְּשָׂרָה רִבְקָה רָחֵל וְלֵאָה (לבת). יְבָרֶכְךָ ה\' וְיִשְׁמְרֶךָ, יָאֵר ה\' פָּנָיו אֵלֶיךָ וִיחֻנֶּךָ, יִשָּׂא ה\' פָּנָיו אֵלֶיךָ וְיָשֵׂם לְךָ שָׁלוֹם.' },
+  kiddush: { title: 'קידוש ליל שבת', text: 'יוֹם הַשִּׁשִּׁי. וַיְכֻלּוּ הַשָּׁמַיִם וְהָאָרֶץ... בָּרוּךְ אַתָּה אֲדֹנָי, מְקַדֵּשׁ הַשַּׁבָּת.' },
+  havdala: { title: 'הבדלה', text: 'הִנֵּה אֵל יְשׁוּעָתִי אֶבְטַח וְלֹא אֶפְחָד... בָּרוּךְ אַתָּה אֲדֹנָי, הַמַּבְדִּיל בֵּין קֹדֶשׁ לְחוֹל.' },
+  eishet: { title: 'אשת חיל', text: 'אֵשֶׁת חַיִל מִי יִמְצָא וְרָחֹק מִפְּנִינִים מִכְרָהּ... שֶׁקֶר הַחֵן וְהֶבֶל הַיֹּפִי אִשָּׁה יִרְאַת ה\' הִיא תִתְהַלָּל.' }
 };
 
 let state = { candle: null, havdala: null, parasha: null, sunset: null, hdate: null, allZmanim: [] };
@@ -245,7 +257,7 @@ function render() {
 function renderBlessing(key) {
   const b = BLESSINGS[key];
   if (!b || !$('blessing-content')) return;
-  $('blessing-content').innerHTML = `<strong>${b.title}</strong>${b.text}`;
+  $('blessing-content').innerHTML = `<strong>${b.title}</strong><br>${b.text}`;
 }
 
 function updateCountdown() {
@@ -325,6 +337,17 @@ if ($('btn-locate')) $('btn-locate').onclick = () => {
 };
 window.updateOffset = (val) => { candleMinutes = parseInt(val); localStorage.setItem('shabbat_minutes', candleMinutes); fetchShabbatTimes(currentCity); };
 if ($('candle-offset')) $('candle-offset').onchange = (e) => window.updateOffset(e.target.value);
+
+if ($('btn-notify')) {
+  $('btn-notify').onclick = async () => {
+    if (!('Notification' in window)) return showToast('הדפדפן שלך לא תומך בהתראות');
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      showToast('התראות הופעלו! תקבלי תזכורת לפני הדלקת נרות');
+      new Notification('נרות שבת', { body: 'מעולה! נזכיר לך להדליק נרות בזמן.', icon: '/favicon.ico' });
+    } else { showToast('יש לאשר התראות בהגדרות הדפדפן'); }
+  };
+}
 
 initApp();
 setInterval(updateCountdown, 60000);
