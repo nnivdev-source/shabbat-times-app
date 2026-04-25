@@ -346,22 +346,33 @@ function renderCityList(filter) {
 // --- Initialization & Consent ---
 const initApp = () => {
   const hasConsent = localStorage.getItem('shabbat_consent');
+  const modal = $('consent-modal');
+  
   if (!hasConsent) {
-    const modal = $('consent-modal');
     if (modal) {
       modal.style.display = 'flex';
-      $('btn-accept-all').onclick = () => {
-        localStorage.setItem('shabbat_consent', 'true');
-        modal.style.display = 'none';
-        fetchShabbatTimes(currentCity);
-      };
-      $('btn-decline').onclick = () => {
-        localStorage.setItem('shabbat_consent', 'partial');
-        modal.style.display = 'none';
-        fetchShabbatTimes(currentCity);
-      };
+      
+      const acceptBtn = $('btn-accept-all');
+      const declineBtn = $('btn-decline');
+      
+      if (acceptBtn) {
+        acceptBtn.onclick = () => {
+          localStorage.setItem('shabbat_consent', 'true');
+          modal.style.display = 'none';
+          fetchShabbatTimes(currentCity);
+        };
+      }
+      
+      if (declineBtn) {
+        declineBtn.onclick = () => {
+          localStorage.setItem('shabbat_consent', 'partial');
+          modal.style.display = 'none';
+          fetchShabbatTimes(currentCity);
+        };
+      }
     }
   } else {
+    if (modal) modal.style.display = 'none';
     fetchShabbatTimes(currentCity);
   }
 };
