@@ -1,5 +1,6 @@
 import './app.css';
 import { formatInTimeZone } from 'date-fns-tz';
+import { PARASHA_DATABASE } from './parasha_data.js';
 
 window.onerror = function(message, source, lineno, colno, error) {
   const el = document.getElementById('loading-overlay');
@@ -54,6 +55,26 @@ const CITIES = [
 
 const HMONTHS = { 'Nisan': 'ניסן', 'Iyyar': 'אייר', 'Sivan': 'סיון', 'Tamuz': 'תמוז', 'Av': 'אב', 'Elul': 'אלול', 'Tishrei': 'תשרי', 'Cheshvan': 'חשון', 'Kislev': 'כסלו', 'Tevet': 'טבת', 'Shvat': 'שבט', 'Adar': 'אדר', 'Adar I': 'אדר א׳', 'Adar II': 'אדר ב׳', 'Adar 1': 'אדר א׳', 'Adar 2': 'אדר ב׳' };
 const HDAY = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳', 'י״א', 'י״ב', 'י״ג', 'י״ד', 'ט״ו', 'ט״ז', 'י״ז', 'י״ח', 'י״ט', 'כ׳', 'כ״א', 'כ״ב', 'כ״ג', 'כ״ד', 'כ״ה', 'כ״ו', 'כ״ז', 'כ״ח', 'כ״ט', 'ל׳'];
+
+const getParashaData = (name) => {
+  if (!name) return null;
+  const parts = name.split(/[-–/]/);
+  let combinedPts = [];
+  let pasuk = '';
+  
+  parts.forEach((p, idx) => {
+    const cleanName = p.trim();
+    if (PARASHA_DATABASE[cleanName]) {
+      if (idx === 0) pasuk = PARASHA_DATABASE[cleanName].p;
+      combinedPts = combinedPts.concat(PARASHA_DATABASE[cleanName].pts);
+    }
+  });
+
+  if (combinedPts.length > 0) {
+    return { p: pasuk, pts: combinedPts.slice(0, 5) };
+  }
+  return null;
+};
 
 function hebrewYear(y) {
   const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
@@ -279,17 +300,22 @@ function render() {
 
   // Parasha
   if (state.parasha) {
-    $('parasha-name').textContent = `פרשת ${state.parasha}`;
-    const keys = state.parasha.split(/-|–/);
-    const pts = keys.flatMap(k => window.PARASHA_FULL_DATA?.[k.trim()]?.pts || []);
-    const display = pts.length ? pts.slice(0, 6) : ["השבת היא מקור הברכה.", "זמן של התבוננות וחיבור."];
-    $('parasha-pts').innerHTML = display.map(p => `
-      <div class="inspiration-point">
-        <div class="point-bullet"></div>
-        <div style="font-size: 1rem; line-height: 1.6; color: var(--text)">${p}</div>
-      </div>
-    `).join('');
-    $('parasha-pasuk').textContent = window.PARASHA_FULL_DATA?.[keys[0].trim()]?.p || "";
+    const pData = getParashaData(state.parasha);
+    if ($('parasha-name')) $('parasha-name').textContent = `פרשת ${state.parasha}`;
+    if (pData) {
+      if ($('parasha-pts')) {
+        $('parasha-pts').innerHTML = pData.pts.map(p => `
+          <div class="inspiration-point">
+            <div class="point-bullet"></div>
+            <div style="font-size: 1rem; line-height: 1.6; color: var(--text)">${p}</div>
+          </div>
+        `).join('');
+      }
+      if ($('parasha-pasuk')) $('parasha-pasuk').textContent = pData.p;
+    } else {
+      if ($('parasha-pts')) $('parasha-pts').innerHTML = '<div class="inspiration-point">שבת שלום ומבורך!</div>';
+      if ($('parasha-pasuk')) $('parasha-pasuk').textContent = "";
+    }
   }
 
   updateCountdown();
