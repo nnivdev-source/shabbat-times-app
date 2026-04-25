@@ -40,20 +40,8 @@ const CITIES = [
   { n: 'נהריה', d: 'Nahariya', c: 'ישראל', geo: 294326, tz: 'Asia/Jerusalem', b: 20 },
   { n: 'קרית גת', d: 'Kiryat Gat', c: 'ישראל', geo: 294498, tz: 'Asia/Jerusalem', b: 20 },
   { n: 'עפולה', d: 'Afula', c: 'ישראל', geo: 295717, tz: 'Asia/Jerusalem', b: 20 },
-  { n: 'אילת', d: 'Eilat', c: 'ישראל', geo: 295277, tz: 'Asia/Jerusalem', b: 20 },
-  { n: 'נתיבות', d: 'Netivot', c: 'ישראל', geo: 294191, tz: 'Asia/Jerusalem', b: 20 },
-  { n: 'שדרות', d: 'Sderot', c: 'ישראל', geo: 293554, tz: 'Asia/Jerusalem', b: 20 },
-  { n: 'מצפה רמון', d: 'Mitzpe Ramon', c: 'ישראל', geo: 294166, tz: 'Asia/Jerusalem', b: 20 },
-  { n: 'צפת', d: 'Safed', c: 'ישראל', geo: 293427, tz: 'Asia/Jerusalem', b: 20 },
-  { n: 'טבריה', d: 'Tiberias', c: 'ישראל', geo: 293322, tz: 'Asia/Jerusalem', b: 20 },
-  { n: 'ניו יורק', d: 'New York', c: 'ארה"ב', geo: 5128581, tz: 'America/New_York', b: 18 },
-  { n: 'לוס אנג\'לס', d: 'Los Angeles', c: 'ארה"ב', geo: 5368361, tz: 'America/Los_Angeles', b: 18 },
-  { n: 'לונדון', d: 'London', c: 'בריטניה', geo: 2643743, tz: 'Europe/London', b: 18 },
-  { n: 'פריז', d: 'Paris', c: 'צרפת', geo: 2988507, tz: 'Europe/Paris', b: 18 },
+  { n: 'אילת', d: 'Eilat', c: 'ישראל', geo: 295277, tz: 'Asia/Jerusalem', b: 18 },
 ];
-
-const HMONTHS = { 'Nisan': 'ניסן', 'Iyyar': 'אייר', 'Sivan': 'סיון', 'Tamuz': 'תמוז', 'Av': 'אב', 'Elul': 'אלול', 'Tishrei': 'תשרי', 'Cheshvan': 'חשון', 'Kislev': 'כסלו', 'Tevet': 'טבת', 'Shvat': 'שבט', 'Adar': 'אדר', 'Adar I': 'אדר א׳', 'Adar II': 'אדר ב׳', 'Adar 1': 'אדר א׳', 'Adar 2': 'אדר ב׳' };
-const HDAY = ['', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳', 'ח׳', 'ט׳', 'י׳', 'י״א', 'י״ב', 'י״ג', 'י״ד', 'ט״ו', 'ט״ז', 'י״ז', 'י״ח', 'י״ט', 'כ׳', 'כ״א', 'כ״ב', 'כ״ג', 'כ״ד', 'כ״ה', 'כ״ו', 'כ״ז', 'כ״ח', 'כ״ט', 'ל׳'];
 
 const PARASHA_DATABASE = {
   'אחרימות': { p: 'וַיְדַבֵּר ה\' אֶל מֹשֶׁה אַחֲרֵי מוֹת שְׁנֵי בְּנֵי אַהֲרֹן.', pts: [
@@ -70,18 +58,19 @@ const PARASHA_DATABASE = {
   ]}
 };
 
-const normalize = (s) => s.replace(/\s/g, '').replace(/[-–/]/g, '').replace('פרשת', '').trim();
+const normalize = (s) => s ? s.replace(/\s/g, '').replace(/[-–/]/g, '').replace('פרשת', '').trim() : '';
 
 const getParashaData = (name) => {
   if (!name) return null;
-  const searchParts = name.split(/[-–/]/).map(normalize);
+  const normalizedSearch = normalize(name);
   let combinedPts = [];
   let pasuk = '';
   
-  searchParts.forEach((p, idx) => {
-    if (PARASHA_DATABASE[p]) {
-      if (idx === 0) pasuk = PARASHA_DATABASE[p].p;
-      combinedPts = combinedPts.concat(PARASHA_DATABASE[p].pts);
+  // Check if any key in database is contained in the normalized name
+  Object.keys(PARASHA_DATABASE).forEach(key => {
+    if (normalizedSearch.includes(key)) {
+      if (!pasuk) pasuk = PARASHA_DATABASE[key].p;
+      combinedPts = combinedPts.concat(PARASHA_DATABASE[key].pts);
     }
   });
 
@@ -89,41 +78,14 @@ const getParashaData = (name) => {
   return null;
 };
 
-function hebrewYear(y) {
-  const ones = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט'];
-  const tens = ['', 'י', 'כ', 'ל', 'מ', 'נ', 'ס', 'ע', 'פ', 'צ'];
-  const hundreds = ['', 'ק', 'ר', 'ש', 'ת'];
-  const rem = y - 5000;
-  const h = Math.floor(rem / 100), t = Math.floor((rem % 100) / 10), o = rem % 10;
-  let s = 'ה׳' + (hundreds[h] || '') + (tens[t] || '') + (ones[o] || '');
-  if (s.length > 2) s = s.slice(0, -1) + '״' + s.slice(-1);
-  return s;
-}
-
-const toHebrewDate = (hdate) => {
-  if (!hdate) return '';
-  const m = hdate.match(/^(\d+)\s+(.+?)\s+(\d+)$/);
-  if (!m) return hdate;
-  return `${HDAY[parseInt(m[1])] || m[1]} ב${HMONTHS[m[2]] || m[2]} ${hebrewYear(parseInt(m[3]))}`;
-};
-
-const formatGregorianHebrew = (iso) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const M = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-  const D = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-  return `יום ${D[d.getDay()]}, ${d.getDate()} ב${M[d.getMonth()]}`;
-};
-
 const BLESSINGS = {
   candles: { title: 'ברכת הדלקת נרות', text: 'בָּרוּךְ אַתָּה אֲדֹנָי אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם, אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו וְצִוָּנוּ לְהַדְלִיק נֵר שֶׁל שַׁבָּת קֹדֶשׁ.' },
-  children: { title: 'ברכת הילדים', text: 'יְשִׂימְךָ אֱלֹהִים כְּאֶפְרַיִם וְכִמְנַשֶּׁה (לבן) / יְשִׂימֵךְ אֱלֹהִים כְּשָׂרָה רִבְקָה רָחֵל וְלֵאָה (לבת). יְבָרֶכְךָ ה\' וְיִשְׁמְרֶךָ, יָאֵר ה\' פָּנָיו אֵלֶיךָ וִיחֻנֶּךָ, יִשָּׂא ה\' פָּנָיו אֵלֶיךָ וְיָשֵׂם לְךָ שָׁלוֹם.' },
   kiddush: { title: 'קידוש ליל שבת', text: 'יוֹם הַשִּׁשִּׁי. וַיְכֻלּוּ הַשָּׁמַיִם וְהָאָרֶץ... בָּרוּךְ אַתָּה אֲדֹנָי, מְקַדֵּשׁ הַשַּׁבָּת.' },
   havdala: { title: 'הבדלה', text: 'הִנֵּה אֵל יְשׁוּעָתִי אֶבְטַח וְלֹא אֶפְחָד... בָּרוּךְ אַתָּה אֲדֹנָי, הַמַּבְדִּיל בֵּין קֹדֶשׁ לְחוֹל.' },
   eishet: { title: 'אשת חיל', text: 'אֵשֶׁת חַיִל מִי יִמְצָא וְרָחֹק מִפְּנִינִים מִכְרָהּ... שֶׁקֶר הַחֵן וְהֶבֶל הַיֹּפִי אִשָּׁה יִרְאַת ה\' הִיא תִתְהַלָּל.' }
 };
 
-let state = { candle: null, havdala: null, parasha: null, sunset: null, hdate: null, allZmanim: [] };
+let state = { candle: null, havdala: null, parasha: null, sunset: null, hdate: null, allZmanim: [], currentBlessing: 'candles' };
 let currentCity = CITIES[0];
 let candleMinutes = parseInt(localStorage.getItem('shabbat_minutes')) || 20;
 
@@ -143,40 +105,26 @@ async function fetchShabbatTimes(city, customName = null) {
   if ($('loc-name')) $('loc-name').textContent = name;
   if ($('loc-sub')) $('loc-sub').textContent = city.c || 'ישראל';
 
-  const cacheKey = `shabbat_v2_${city.geo || (city.lat + '_' + city.lng)}`;
+  const cacheKey = `shabbat_v3_${city.geo || (city.lat + '_' + city.lng)}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     const d = JSON.parse(cached);
-    if (new Date(d.expiry) > new Date()) {
-      parseData(d.data);
-      render();
-    }
+    if (new Date(d.expiry) > new Date()) { parseData(d.data); render(); }
   }
 
   toggleLoading(true);
   try {
     let shabbatUrl;
-    if (typeof city === 'string') {
-      shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&city=${encodeURIComponent(city)}&m=${candleMinutes}&b=20&M=on&lg=he`;
-    } else if (city.geo) {
-      shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&geonameid=${city.geo}&m=${candleMinutes}&b=${city.b || 20}&M=on&lg=he`;
-    } else {
-      shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&latitude=${city.lat}&longitude=${city.lng}&tzid=Asia/Jerusalem&m=${candleMinutes}&b=20&M=on&lg=he`;
-    }
+    if (city.geo) shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&geonameid=${city.geo}&m=${candleMinutes}&b=${city.b || 20}&M=on&lg=he`;
+    else shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&latitude=${city.lat}&longitude=${city.lng}&tzid=Asia/Jerusalem&m=${candleMinutes}&b=20&M=on&lg=he`;
 
     const shabbatResp = await fetch(shabbatUrl);
     const data = await shabbatResp.json();
-    if (data.error) { showToast('מיקום לא נמצא'); return; }
-
     localStorage.setItem('shabbat_city', JSON.stringify(currentCity));
-    const expiry = new Date(); expiry.setHours(expiry.getHours() + 12);
-    localStorage.setItem(cacheKey, JSON.stringify({ data, expiry }));
-
+    localStorage.setItem(cacheKey, JSON.stringify({ data, expiry: new Date(Date.now() + 12 * 3600000) }));
     parseData(data);
     render();
-    if ($('city-search')) $('city-search').value = '';
-    renderCityList('');
-  } catch (err) { showToast('שגיאה בחיבור לשרת'); } finally { toggleLoading(false); }
+  } catch (err) { showToast('שגיאה בחיבור'); } finally { toggleLoading(false); }
 }
 
 function parseData(data) {
@@ -188,8 +136,7 @@ function parseData(data) {
     state.parasha = (p.hebrew || p.title).replace('Parashat ', '').replace('פרשת ', '');
     state.hdate = p.hdate;
   }
-  const sunsetItem = items.find(i => i.title === 'Sunset');
-  state.sunset = sunsetItem ? sunsetItem.date : (state.havdala ? new Date(new Date(state.havdala).getTime() - 50 * 60000).toISOString() : null);
+  state.sunset = items.find(i => i.title === 'Sunset')?.date || (state.havdala ? new Date(new Date(state.havdala).getTime() - 50 * 60000).toISOString() : null);
 
   const findZman = (keys) => {
     const item = items.find(i => keys.some(k => i.title && i.title.includes(k)));
@@ -197,53 +144,41 @@ function parseData(data) {
   };
   state.allZmanim = [
     { label: 'עלות השחר', val: findZman(['alotHaShachar', 'Alos haShachar']) },
-    { label: 'משיכיר (ציצית)', val: findZman(['misheyakir', 'Misheyakir']) },
     { label: 'הנץ החמה', val: findZman(['sunrise', 'Sunrise']) },
-    { label: 'סוף זמן ק"ש (גר"א)', val: findZman(['sofZmanShma', 'Krias Shema']) },
-    { label: 'סוף זמן תפילה (גר"א)', val: findZman(['sofZmanTfilla', 'Tfila']) },
+    { label: 'סוף זמן ק"ש', val: findZman(['sofZmanShma', 'Krias Shema']) },
+    { label: 'סוף זמן תפילה', val: findZman(['sofZmanTfilla', 'Tfila']) },
     { label: 'חצות היום', val: findZman(['chatzot', 'Chatzot']) },
     { label: 'מנחה גדולה', val: findZman(['minchaGedola', 'Mincha Gedola']) },
-    { label: 'מנחה קטנה', val: findZman(['minchaKetana', 'Mincha Ketana']) },
     { label: 'פלג המנחה', val: findZman(['plagHaMincha', 'Plag']) },
     { label: 'שקיעת החמה', val: state.sunset },
     { label: 'צאת הכוכבים', val: findZman(['tzeit', 'Tzeit']) || state.havdala },
-    { label: 'יציאת שבת', val: state.havdala },
-    { label: 'רבנו תם', val: findZman(['tzeit85deg', 'tzeit72min', 'Havdalah (72 min)']) }
+    { label: 'יציאת שבת', val: state.havdala }
   ].filter(z => z.val);
 }
 
 function render() {
   const tz = currentCity.tz || 'Asia/Jerusalem';
-  if ($('candle-time')) $('candle-time').textContent = formatTime(state.candle, tz);
-  if ($('t-candle')) $('t-candle').textContent = formatTime(state.candle, tz);
-  if ($('t-havdala')) $('t-havdala').textContent = formatTime(state.havdala, tz);
-  if ($('t-sunset')) $('t-sunset').textContent = formatTime(state.sunset, tz);
-  if ($('t-stars')) $('t-stars').textContent = formatTime(state.havdala, tz);
+  const setVal = (id, val) => { if ($(id)) $(id).textContent = val; };
+  setVal('candle-time', formatTime(state.candle, tz));
+  setVal('t-candle', formatTime(state.candle, tz));
+  setVal('t-havdala', formatTime(state.havdala, tz));
+  setVal('t-sunset', formatTime(state.sunset, tz));
+  setVal('t-stars', formatTime(state.havdala, tz));
   if ($('loc-name')) $('loc-name').textContent = currentCity.n;
   if ($('loc-sub')) $('loc-sub').textContent = currentCity.c;
-  if ($('candle-date')) $('candle-date').textContent = formatGregorianHebrew(state.candle);
-  if ($('candle-hebrew')) $('candle-hebrew').textContent = toHebrewDate(state.hdate);
+  if ($('candle-date')) $('candle-date').textContent = formatGregorian(state.candle);
   if ($('candle-offset')) $('candle-offset').value = candleMinutes;
 
   const zList = $('zmanim-list');
   if (zList) {
-    zList.innerHTML = state.allZmanim.map(z => `
-      <div class="zmanim-item">
-        <span class="zmanim-label">${z.label}</span>
-        <span class="zmanim-value">${formatTime(z.val, tz)}</span>
-      </div>
-    `).join('');
+    zList.innerHTML = state.allZmanim.map(z => `<div class="zmanim-item"><span class="zmanim-label">${z.label}</span><span class="zmanim-value">${formatTime(z.val, tz)}</span></div>`).join('');
   }
 
   if (state.parasha) {
     const pData = getParashaData(state.parasha);
     if ($('parasha-name')) $('parasha-name').textContent = `פרשת ${state.parasha}`;
     if (pData) {
-      if ($('parasha-pts')) {
-        $('parasha-pts').innerHTML = pData.pts.map(p => `
-          <div class="inspiration-point"><div class="point-bullet"></div><div style="font-size:1rem;line-height:1.6;color:var(--text)">${p}</div></div>
-        `).join('');
-      }
+      if ($('parasha-pts')) $('parasha-pts').innerHTML = pData.pts.map(p => `<div class="inspiration-point"><div class="point-bullet"></div><div style="font-size:1rem;line-height:1.6;color:var(--text)">${p}</div></div>`).join('');
       if ($('parasha-pasuk')) $('parasha-pasuk').textContent = pData.p;
     } else {
       if ($('parasha-pts')) $('parasha-pts').innerHTML = '<div class="inspiration-point">שבת שלום ומבורך!</div>';
@@ -251,7 +186,7 @@ function render() {
     }
   }
   updateCountdown();
-  renderBlessing('candles');
+  renderBlessing(state.currentBlessing);
 }
 
 function renderBlessing(key) {
@@ -271,6 +206,14 @@ function updateCountdown() {
   $('countdown').innerHTML = h > 24 ? `<span>${Math.floor(h / 24)} ימים</span> עד שבת` : `<span>${h}:${String(m).padStart(2, '0')}</span> שעות להדלקת נרות`;
 }
 
+function formatGregorian(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const M = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
+  const D = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+  return `יום ${D[d.getDay()]}, ${d.getDate()} ב${M[d.getMonth()]}`;
+}
+
 function renderCityList(filter) {
   const container = $('city-list-items');
   if (!container) return;
@@ -287,25 +230,16 @@ window.setCity = (json) => {
 const initApp = () => {
   const saved = localStorage.getItem('shabbat_city');
   if (saved) currentCity = JSON.parse(saved);
-  
   const modal = $('consent-modal');
   const consent = localStorage.getItem('shabbat_consent');
-  if (!consent) {
-    if (modal) {
-      modal.style.display = 'flex';
-      const acceptBtn = $('btn-accept-all');
-      const declineBtn = $('btn-decline');
-      if (acceptBtn) acceptBtn.onclick = () => { localStorage.setItem('shabbat_consent', 'true'); modal.style.display = 'none'; fetchShabbatTimes(currentCity); };
-      if (declineBtn) declineBtn.onclick = () => { localStorage.setItem('shabbat_consent', 'partial'); modal.style.display = 'none'; fetchShabbatTimes(currentCity); };
-    }
-  } else {
-    if (modal) modal.style.display = 'none';
-    fetchShabbatTimes(currentCity);
-  }
+  if (!consent && modal) modal.style.display = 'flex';
+  else fetchShabbatTimes(currentCity);
 };
 
 // Listeners
-if ($('btn-menu')) $('btn-menu').onclick = () => { const menu = $('side-menu'); menu.style.display = 'flex'; menu.querySelector('.nav-btn')?.focus(); };
+if ($('btn-accept-all')) $('btn-accept-all').onclick = () => { localStorage.setItem('shabbat_consent', 'true'); $('consent-modal').style.display = 'none'; fetchShabbatTimes(currentCity); };
+if ($('btn-decline')) $('btn-decline').onclick = () => { localStorage.setItem('shabbat_consent', 'partial'); $('consent-modal').style.display = 'none'; fetchShabbatTimes(currentCity); };
+if ($('btn-menu')) $('btn-menu').onclick = () => { $('side-menu').style.display = 'flex'; };
 if ($('close-menu')) $('close-menu').onclick = () => $('side-menu').style.display = 'none';
 document.querySelectorAll('.nav-btn').forEach(b => {
   b.onclick = () => {
@@ -325,9 +259,14 @@ if ($('btn-calendar')) $('btn-calendar').onclick = () => {
 if ($('btn-city-change')) $('btn-city-change').onclick = () => $('city-panel').style.display = 'block';
 if ($('close-city-panel')) $('close-city-panel').onclick = () => $('city-panel').style.display = 'none';
 if ($('city-search')) $('city-search').oninput = (e) => renderCityList(e.target.value);
-document.querySelectorAll('.bless-tab').forEach(tab => tab.onclick = () => { document.querySelectorAll('.bless-tab').forEach(t => t.classList.remove('active')); tab.classList.add('active'); renderBlessing(tab.dataset.tab); });
+document.querySelectorAll('.bless-tab').forEach(tab => tab.onclick = () => {
+  document.querySelectorAll('.bless-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  state.currentBlessing = tab.dataset.tab;
+  renderBlessing(state.currentBlessing);
+});
 if ($('btn-share-main')) $('btn-share-main').onclick = () => {
-  const text = `שבת שלום! הדלקת נרות ב${currentCity.n}: ${formatTime(state.candle, currentCity.tz)}. יציאת שבת: ${formatTime(state.havdala, currentCity.tz)}. נשלח מאפליקציית "נרות שבת"`;
+  const text = `שבת שלום! הדלקת נרות ב${currentCity.n}: ${formatTime(state.candle, currentCity.tz)}. יציאת שבת: ${formatTime(state.havdala, currentCity.tz)}.`;
   if (navigator.share) navigator.share({ title: 'זמני השבת', text });
   else { navigator.clipboard.writeText(text); showToast('הזמנים הועתקו'); }
 };
@@ -335,8 +274,7 @@ if ($('btn-locate')) $('btn-locate').onclick = () => {
   if (!navigator.geolocation) return showToast('זיהוי מיקום לא נתמך');
   toggleLoading(true); navigator.geolocation.getCurrentPosition((pos) => fetchShabbatTimes({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 'מיקום נוכחי'), () => { showToast('גישה למיקום נדחתה'); toggleLoading(false); });
 };
-window.updateOffset = (val) => { candleMinutes = parseInt(val); localStorage.setItem('shabbat_minutes', candleMinutes); fetchShabbatTimes(currentCity); };
-if ($('candle-offset')) $('candle-offset').onchange = (e) => window.updateOffset(e.target.value);
+if ($('candle-offset')) $('candle-offset').onchange = (e) => { candleMinutes = parseInt(e.target.value); localStorage.setItem('shabbat_minutes', candleMinutes); fetchShabbatTimes(currentCity); };
 
 if ($('btn-notify')) {
   $('btn-notify').onclick = async () => {
