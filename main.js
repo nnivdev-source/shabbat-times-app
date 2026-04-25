@@ -1,5 +1,6 @@
 import './app.css';
 import { formatInTimeZone } from 'date-fns-tz';
+import { PARASHA_DATABASE as PDB_RAW } from './parasha_data.js';
 
 window.onerror = function(message, source, lineno, colno, error) {
   const el = document.getElementById('loading-overlay');
@@ -11,6 +12,13 @@ window.onerror = function(message, source, lineno, colno, error) {
     </div>`;
   }
 };
+
+// Normalize keys in the database for easier matching
+const normalizeStr = (s) => s ? s.replace(/\s/g, '').replace(/[-–/]/g, '').replace('פרשת', '').trim() : '';
+const PARASHA_DATABASE = {};
+Object.keys(PDB_RAW).forEach(key => {
+  PARASHA_DATABASE[normalizeStr(key)] = PDB_RAW[key];
+});
 
 // --- DATA ---
 const CITIES = [
@@ -25,34 +33,20 @@ const CITIES = [
   { n: 'לונדון', d: 'London', c: 'בריטניה', geo: 2643743, tz: 'Europe/London', b: 18 },
 ];
 
-const PARASHA_DATABASE = {
-  'אחרימות': { p: 'וַיְדַבֵּר ה\' אֶל מֹשֶׁה אַחֲרֵי מוֹת שְׁנֵי בְּנֵי אַהֲרֹן.', pts: [
-    'השילוב בין התעלות למעשה: השילוב בין עבודת הקודש הפנימית לבין הבית והיומיום.',
-    'כוחה של תשובה: היכולת לתקן ולחזור להיטהר גם אחרי רגעים קשים.',
-    'יום הכיפורים: הכוח של סליחה וניקוי הלב מול הבורא.',
-    'אחריות וזהירות: מנהיגות דורשת ענווה וזהירות בקדושה.'
-  ]},
-  'קדושים': { p: 'קְדֹשִׁים תִּהְיוּ כִּי קָדוֹשׁ אֲנִי ה\' אֱלֹהֵיכֶם.', pts: [
-    'אהבת ישראל: "ואהבת לרעך כמוך" — הבסיס לכל הקדושה בחיים.',
-    'קדושה בתוך החיים: להפוך את העולם הגשמי למקום שבו שורה השכינה.',
-    'כבוד האדם: "לא תקלל חרש" — חובתנו לכבד כל אדם באשר הוא.',
-    'דירה בתחתונים: המטרה היא להוריד את האור הרוחני לתוך המעשים הכי פשוטים.'
-  ]}
-};
-
-const normalize = (s) => s ? s.replace(/\s/g, '').replace(/[-–/]/g, '').replace('פרשת', '').trim() : '';
-
 const getParashaData = (name) => {
   if (!name) return null;
-  const normalizedSearch = normalize(name);
+  const normalizedSearch = normalizeStr(name);
   let combinedPts = [];
   let pasuk = '';
+  
+  // Check if any normalized key in database is contained in the normalized search string
   Object.keys(PARASHA_DATABASE).forEach(key => {
     if (normalizedSearch.includes(key)) {
       if (!pasuk) pasuk = PARASHA_DATABASE[key].p;
       combinedPts = combinedPts.concat(PARASHA_DATABASE[key].pts);
     }
   });
+
   if (combinedPts.length > 0) return { p: pasuk, pts: combinedPts.slice(0, 5) };
   return null;
 };
@@ -97,7 +91,7 @@ async function fetchShabbatTimes(city, customName = null) {
   if ($('loc-sub')) $('loc-sub').textContent = city.c || 'ישראל';
   renderCityList(''); 
 
-  const cacheKey = `shabbat_v5_${city.geo || (city.n + '_' + city.c)}`;
+  const cacheKey = `shabbat_v6_${city.geo || (city.n + '_' + city.c)}`;
   const cached = localStorage.getItem(cacheKey);
   if (cached) {
     const d = JSON.parse(cached);
