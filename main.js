@@ -343,39 +343,62 @@ function renderCityList(filter) {
   });
 }
 
-const sideMenu = $('side-menu');
-
-const toggleMenu = (show) => {
-  if (show) {
-    sideMenu.style.display = 'flex';
-    setTimeout(() => sideMenu.style.transform = 'translateX(0)', 10);
+// --- Initialization & Consent ---
+const initApp = () => {
+  const hasConsent = localStorage.getItem('shabbat_consent');
+  if (!hasConsent) {
+    const modal = $('consent-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      $('btn-accept-all').onclick = () => {
+        localStorage.setItem('shabbat_consent', 'true');
+        modal.style.display = 'none';
+        fetchShabbatTimes(currentCity);
+      };
+      $('btn-decline').onclick = () => {
+        localStorage.setItem('shabbat_consent', 'partial');
+        modal.style.display = 'none';
+        fetchShabbatTimes(currentCity);
+      };
+    }
   } else {
-    sideMenu.style.transform = 'translateX(100%)';
-    setTimeout(() => {
-      sideMenu.style.display = 'none';
-    }, 300);
+    fetchShabbatTimes(currentCity);
   }
 };
 
-if ($('btn-menu')) $('btn-menu').onclick = () => toggleMenu(true);
-if ($('close-menu')) $('close-menu').onclick = () => toggleMenu(false);
+// --- Event Listeners Update ---
+if ($('btn-menu')) {
+  $('btn-menu').onclick = () => {
+    const menu = $('side-menu');
+    menu.style.display = 'flex';
+    menu.querySelector('.nav-btn')?.focus();
+  };
+}
+if ($('close-menu')) $('close-menu').onclick = () => $('side-menu').style.display = 'none';
 
 document.querySelectorAll('.nav-btn').forEach(b => {
   b.onclick = () => {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.classList.remove('active');
+      btn.removeAttribute('aria-current');
+    });
     
-    $(`sec-${b.dataset.sec}`).classList.add('active');
-    
-    document.querySelectorAll(`.nav-btn[data-sec="${b.dataset.sec}"]`).forEach(btn => btn.classList.add('active'));
+    const target = $(`sec-${b.dataset.sec}`);
+    if (target) {
+      target.classList.add('active');
+      b.classList.add('active');
+      b.setAttribute('aria-current', 'page');
+    }
     
     $('side-menu').style.display = 'none';
-    window.scrollTo(0,0);
+    window.scrollTo(0, 0);
   };
 });
 
-if ($('btn-menu')) $('btn-menu').onclick = () => $('side-menu').style.display = 'flex';
-if ($('close-menu')) $('close-menu').onclick = () => $('side-menu').style.display = 'none';
+if ($('btn-city-change')) $('btn-city-change').onclick = () => $('city-panel').style.display = 'block';
+if ($('close-city-panel')) $('close-city-panel').onclick = () => $('city-panel').style.display = 'none';
+if ($('city-search')) $('city-search').oninput = (e) => renderCityList(e.target.value);
 
 document.querySelectorAll('.bless-tab').forEach(tab => tab.onclick = () => {
   document.querySelectorAll('.bless-tab').forEach(t => t.classList.remove('active'));
@@ -383,27 +406,27 @@ document.querySelectorAll('.bless-tab').forEach(tab => tab.onclick = () => {
   renderBlessing(tab.dataset.tab);
 });
 
-$('location-bar').onclick = () => $('city-panel').style.display = 'block';
-$('close-city-panel').onclick = () => $('city-panel').style.display = 'none';
-$('city-search').oninput = (e) => renderCityList(e.target.value);
-
-$('btn-share-main').onclick = () => {
-  const text = `שבת שלום! 
+if ($('btn-share-main')) {
+  $('btn-share-main').onclick = () => {
+    const text = `שבת שלום! 
 הדלקת נרות ב${currentCity.n}: ${formatTime(state.candle, currentCity.tz)}
 יציאת שבת: ${formatTime(state.havdala, currentCity.tz)}
 נשלח מאפליקציית "נרות שבת"`;
-  if (navigator.share) navigator.share({ title: 'זמני השבת', text });
-  else { navigator.clipboard.writeText(text); showToast('הזמנים הועתקו'); }
-};
+    if (navigator.share) navigator.share({ title: 'זמני השבת', text });
+    else { navigator.clipboard.writeText(text); showToast('הזמנים הועתקו'); }
+  };
+}
 
-$('btn-locate').onclick = () => {
-  if (!navigator.geolocation) return showToast('זיהוי מיקום לא נתמך');
-  toggleLoading(true);
-  navigator.geolocation.getCurrentPosition(
-    (pos) => fetchShabbatTimes({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 'מיקום נוכחי'),
-    () => { showToast('גישה למיקום נדחתה'); toggleLoading(false); }
-  );
-};
+if ($('btn-locate')) {
+  $('btn-locate').onclick = () => {
+    if (!navigator.geolocation) return showToast('זיהוי מיקום לא נתמך');
+    toggleLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => fetchShabbatTimes({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 'מיקום נוכחי'),
+      () => { showToast('גישה למיקום נדחתה'); toggleLoading(false); }
+    );
+  };
+}
 
 window.updateOffset = (val) => {
   candleMinutes = parseInt(val);
@@ -411,8 +434,12 @@ window.updateOffset = (val) => {
   fetchShabbatTimes(currentCity);
 };
 
-// Initial Load
-fetchShabbatTimes(currentCity);
+if ($('candle-offset')) {
+  $('candle-offset').onchange = (e) => window.updateOffset(e.target.value);
+}
+
+// Initial Load Trigger
+initApp();
 setInterval(updateCountdown, 60000);
 
 if ('serviceWorker' in navigator) {
@@ -448,8 +475,8 @@ window.PARASHA_FULL_DATA = {
   'שמיני': { p: 'וַיְהִי בַּיּוֹם הַשְּׁמִינִי', pts: ['שמחה וטרגדיה: החיים מורכבים מרגעים של שיא ותהום המשולבים יחד.', 'שתיקת אהרן: יש רגעים שהשתיקה היא התגובה הכי עוצמתית ומכובדת.', 'כשרות המזון: מה שאנחנו מכניסים לגוף משפיע על הטוהר של הנפש.', 'הבדלה: היכולת להבחין בין טוב לרע היא הכוח המקדש אותנו.'] },
   'תזריע': { p: 'אִשָּׁה כִּי תַזְרִיעַ', pts: ['פלא הבריאה: קדושת החיים החדשים והכוח הרוחני המיוחד של האישה.', 'נגעי הצרעת: דיבור רע הורס עולמות — הדיבור שלנו בונה מציאות.', 'מבט של חסד: הכהן מאבחן בחסד — מבט נכון יכול לרפא אדם.', 'בידוד לתיקון: לפעמים צריך שקט ובדידות כדי לעשות חשבון נפש אמיתי.'] },
   'מצורע': { p: 'זֹאת תִּהְיֶה תּוֹרַת הַמְּצֹרָע', pts: ['תהליך הטהרה: היכולת להשתחרר מהעבר השלילי ולצאת לדרך חדשה.', 'חסד מחוץ למחנה: לא משאירים אף אחד לבד בחוץ — תמיד מושיטים יד.', 'נגעי הבית: הקירות סופגים את האווירה — כדאי למלא את הבית באור.', 'חזרה לקהילה: האמון נבנה מחדש צעד אחר צעד בסבלנות.'] },
-  'אחרי מות': { p: 'וַיְדַבֵּר ה\' אַחֲרֵי מוֹת', pts: ['חשבון נפש: יום הכיפורים מלמד על כוחה של סליחה וניקוי הלב.', 'שני הכוחות: לכל אדם יש כוחות מנוגדים — הבחירה היא מה להעלות לקודש.', 'כבוד לחיים: כבוד לנפש שנמצאת בכל יצור חי בעולם.', 'קדושת המשפחה: גבולות נכונים יוצרים מרחב בטוח לאהבה וקדושה.'] },
-  'קדושים': { p: 'קְדֹשִׁים תִּהְיוּ', pts: ['ואהבת לרעך כמוך: הקדושה נמצאת ביחסים הטובים שבין אדם לחברו.', 'כבוד מבוגרים: הערכת הניסיון והחכמה של הדור הקודם בונה חברה חזקה.', 'איסור רכילות: שמירה על הלשון היא המגן הכי חזק של הקהילה שלנו.', 'צדק לעני: להשאיר חלק מההצלחה שלך לאחרים שזקוקים לה.'] },
+  'אחרי מות': { p: 'וַיְדַבֵּר ה\' אַחֲרֵי מוֹת', pts: ['קדושת הבית: שמירה על טוהר המשפחה וגבולות המכבדים את הזולת.', 'התמודדות עם משברים: היכולת לצמוח מתוך אובדן ולבחור בחיים.', 'יום הכיפורים: הכוח של סליחה, ניקוי הלב והתחלה חדשה מול הבורא.'] },
+  'קדושים': { p: 'קְדֹשִׁים תִּהְיוּ', pts: ['ואהבת לרעך כמוך: הקדושה היהודית מתחילה במעשים חברתיים של חסד וצדק.', 'כבוד האדם: "לא תקלל חרש" — חובתנו לכבד כל אדם, גם כשאינו שומע או רואה.', 'קדושת היומיום: להפוך את המעשים הרגילים (עבודה, מסחר) למוסריים וערכיים.'] },
   'אמור': { p: 'וַיֹּאמֶר ה\' אֱמֹר', pts: ['לוח שנה מקודש: השבת והחגים הם תחנות זמן לעצירה וחיבור למהות.', 'ספירת העומר: תהליך של צמיחה אישית מיום ליום לקראת קבלת התורה.', 'שלמות הכוונה: אנחנו צריכים להביא את הכוונות הכי שלמות לעבודת ה\'.', 'קידוש השם: ההתנהגות שלנו קובעת איך העולם רואה את האמונה.'] },
   'בהר': { p: 'וַיְדַבֵּר ה\' בְּהַר סִינַי', pts: ['שביתת הארץ: השמיטה מלמדת שהאדמה של הבורא ואנחנו רק דיירים.', 'שנת היובל: חזרה לשורשים ושחרור — אין עוני או עבדות נצחיים.', 'איסור אונאה: איסור לנצל חולשה של אדם אחר בממון או במילים.', 'עזרה לאח: האחריות החברתית היא לדאוג שלכולם יהיה מקום מכובד.'] },
   'בחוקותי': { p: 'אִם בְּחֻקֹּתַי תֵּלֵכוּ', pts: ['ברכת השפע: כשאנחנו בדרך הנכונה הטבע כולו משתף פעולה איתנו.', 'אחריות ותוצאה: המציאות היא מראה לבחירות ולמעשים שלנו בעולם.', 'זיכרון הברית: תמיד יש דרך חזרה — ה\' לעולם לא שוכח את הברית.', 'חתימת ויקרא: כל חיינו יכולים להיות שיר של קדושה אם נבחר בכך.'] },
