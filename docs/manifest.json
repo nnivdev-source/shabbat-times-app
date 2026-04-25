@@ -1,0 +1,16 @@
+{
+  "name": "נרות שבת - זמני הדלקה וזמנים הלכתיים",
+  "short_name": "נרות שבת",
+  "description": "האפליקציה המובילה לזמני כניסת ויציאת שבת, פרשת השבוע וזמנים הלכתיים.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a0a00",
+  "theme_color": "#c8973a",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3246/3246608.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
